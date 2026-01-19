@@ -653,11 +653,24 @@ for index, row in df_v.iterrows():
 
         # --- VISUALIZAÇÃO PADRÃO ---
         else:
-            # (Aqui fica o seu layout de colunas c1, c2, c3 que você postou)
-            # ... colunas de imagem e performance ...
+            # Colunas de Conteúdo (Garante que estas 3 colunas existam antes)
+            c1, c2, c3 = st.columns([1, 1.5, 1])
+            
+            with c1:
+                if row['imagem_url']: 
+                    st.image(row['imagem_url'], use_container_width=True)
+                st.write(f"**UUID:** `{row.get('uuid_unico', 'N/A')}`")
+            
+            with c2:
+                st.markdown("**📈 Performance**")
+                # Aqui você pode manter sua lógica de performance
+            
+            with c3:
+                st.markdown("**💰 Avaliação**")
+                # Aqui você pode manter sua lógica de métricas
 
-            # BOTÕES DE AÇÃO REVISADOS
-            st.write("---")
+            # --- LINHA DIVISORA E BOTÕES (AQUI ESTAVA O ERRO) ---
+            st.write("---") 
             b1, b2, b3 = st.columns(3)
             
             if b1.button("📝 Editar", key=f"btn_e_{row['id']}", use_container_width=True):
@@ -669,21 +682,7 @@ for index, row in df_v.iterrows():
                 st.rerun()
             
             if b3.button("🗑️ Remover", key=f"btn_d_{row['id']}", use_container_width=True):
-                # Para remoção, usamos um modal simples do Streamlit
                 st.session_state[f"delete_confirm_{row['id']}"] = True
-
-            # Lógica de Confirmação de Exclusão
-            if st.session_state.get(f"delete_confirm_{row['id']}"):
-                st.error(f"Tem certeza que deseja excluir '{row['nome']}'?")
-                conf1, conf2 = st.columns(2)
-                if conf1.button("Sim, Excluir", key=f"confirm_del_yes_{row['id']}"):
-                    cursor.execute("DELETE FROM itens WHERE id = ?", (row['id'],))
-                    conn.commit()
-                    del st.session_state[f"delete_confirm_{row['id']}"]
-                    st.rerun()
-                if conf2.button("Não, Voltar", key=f"confirm_del_no_{row['id']}"):
-                    del st.session_state[f"delete_confirm_{row['id']}"]
-                    st.rerun()
 
 
                         # HISTÓRICO DE PROPRIETÁRIOS
@@ -872,3 +871,4 @@ elif menu == "Navegar Coleções":
 
 
 conn.close()
+
