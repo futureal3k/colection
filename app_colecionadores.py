@@ -589,71 +589,28 @@ elif menu == "Visualizar Coleções":
 
             st.write("### 📦 Itens Individuais")
             
-# --- LOOP DE ITENS ---
-for index, row in df_v.iterrows():
-    # Chaves únicas para controlar o estado de cada item individualmente
-    e_key = f"edit_mode_{row['id']}"
-    s_key = f"send_mode_{row['id']}"
-    
-    with st.expander(f"📦 {row['nome']} | UUID: {row.get('uuid_unico', 'N/A')}"):
-        
-        # --- MODO EDIÇÃO ---
-        if st.session_state.get(e_key):
-            with st.form(f"f_ed_{row['id']}"):
-                st.subheader("📝 Editar Ativo")
-                ce1, ce2 = st.columns(2)
-                with ce1:
-                    n_nome = st.text_input("Nome", value=row['nome'])
-                    n_cat = st.selectbox("Categoria", ["Moedas", "Relógios", "Arte", "Outros"], index=0)
-                with ce2:
-                    n_val = st.number_input("Valor Estimado", value=float(row['valor_estimado']))
-                    n_moeda = st.selectbox("Moeda", ["BRL", "USD", "BTC"], index=0)
+            # --- LOOP DE ITENS ---
+            for index, row in df_v.iterrows():
+                e_key, s_key, d_key = f"ed_{row['id']}", f"sn_{row['id']}", f"dl_{row['id']}"
                 
-                c_btn1, c_btn2 = st.columns(2)
-                if c_btn1.form_submit_button("💾 Salvar Alterações"):
-                    cursor.execute("""
-                        UPDATE itens 
-                        SET nome=?, categoria=?, valor_estimado=?, moeda=? 
-                        WHERE id=?""", (n_nome, n_cat, n_val, n_moeda, row['id']))
-                    conn.commit()
-                    st.session_state[e_key] = False
-                    st.success("Item atualizado!")
-                    st.rerun()
-                if c_btn2.form_submit_button("❌ Cancelar"):
-                    st.session_state[e_key] = False
-                    st.rerun()
-
-        # --- MODO ENVIO (TRANSFERÊNCIA) ---
-        elif st.session_state.get(s_key):
-            st.warning("⚠️ Você está transferindo a propriedade deste item.")
-            dest_pk = st.text_input("Cole a Chave Pública (Endereço) do novo dono:", key=f"dest_{row['id']}")
-            
-            col_send1, col_send2 = st.columns(2)
-            if col_send1.button("✅ Confirmar Transferência", key=f"conf_s_{row['id']}"):
-                if dest_pk:
-                    # 1. Registra no Histórico
-                    data_hoje = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-                    cursor.execute("""
-                        INSERT INTO historico_transferencias (item_id, antigo_dono_pubkey, novo_dono_pubkey, data_transferencia)
-                        VALUES (?, ?, ?, ?)""", (row['id'], pub_key, dest_pk, data_hoje))
-                    
-                    # 2. Muda o dono do item
-                    cursor.execute("UPDATE itens SET dono_pubkey = ? WHERE id = ?", (dest_pk, row['id']))
-                    conn.commit()
-                    
-                    st.session_state[s_key] = False
-                    st.success(f"Item enviado para {dest_pk[:10]}...")
-                    st.rerun()
-                else:
-                    st.error("Informe o endereço de destino.")
-            
-            if col_send2.button("🔙 Cancelar", key=f"canc_s_{row['id']}"):
-                st.session_state[s_key] = False
-                st.rerun()
-
-        # --- VISUALIZAÇÃO PADRÃO ---
-        else:
-            # Colunas de Conteúdo (Garante que estas 3 colunas existam antes)
+                with st.expander(f"📦 {row['nome']} | UUID: {row['uuid_unico']}"):
+                    if st.session_state.get(e_key):
+                        # FORMULÁRIO DE EDIÇÃO (Completo como na criação)
+                        with st.form(f"f_ed_{row['id']}"):
+                            st.subheader("📝 Editar Ativo")
+                            ce1, ce2 = st.columns(2)
+                            with ce1:
+                                n_nome = st.text_input("Nome", value=row['nome'])
+                                n_cat = st.selectbox("Categoria", ["Moedas", "Relógios", "Arte", "Outros"], index=0)
+                            with ce2:
+                                n_val = st.number_input("Valor Estimado", value=float(row['valor_estimado']))
+                                n_moeda = st.selectbox("Moeda", ["BRL", "USD", "BTC"], index=0)
+                            if st.form_submit_button("Salvar"):
+                                cursor.execute("UPDATE itens SET nome=?, categoria=?, valor_estimado=?, moeda=? WHERE id=?", (n_nome, n_cat, n_val, n_moeda, row['id']))
+                                conn.commit()
+                                st.session_state[e_key] = False
+                                st.rerun()
+                    else:
                         # --- VISUALIZAÇÃO PADRÃO CORRIGIDA ---
                         c1, c2, c3 = st.columns([1, 1.5, 1])
                         
@@ -662,36 +619,62 @@ for index, row in df_v.iterrows():
                                 st.image(row['imagem_url'], use_container_width=True)
                             st.write(f"**UUID:** `{row['uuid_unico']}`")
                         
-                        with c2: # Performance Individual
-                            st.markdown("**📈 Performance**")
-                            # (Sua lógica de performance aqui)
+                        with c2: # Performance Individual vs M2 e BTC
+                            st.markdown("**📈 Performance Individual**")
+                            c_ind = calcular_comparativos_historicos(row['data_aquisicao'])
                             v_at_brl = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BRL', cots_v)
-                            st.write(f"Valor Atual: **R$ {v_at_brl:,.2f}**")
+                            v_pg_brl = converter_moeda_v2(row['preco_compra'], row['moeda'], 'BRL', cots_v)
+                            
+                            if v_pg_brl > 0:
+                                val_i = ((v_at_brl - v_pg_brl) / v_pg_brl) * 100
+                                st.write(f"Valorização: **{val_i:.2f}%**")
+                                st.write("---")
+                                if val_i > c_ind['m2_usd_perc']: 
+                                    st.success(f"🏆 Superou M2 EUA ({c_ind['m2_usd_perc']}%)")
+                                else: 
+                                    st.warning(f"📉 Abaixo do M2 EUA ({c_ind['m2_usd_perc']}%)")
+                                
+                                if val_i > c_ind['btc_perc']: 
+                                    st.success(f"🚀 Superou Bitcoin ({c_ind['btc_perc']}%)")
+                                else: 
+                                    st.error(f"₿ Abaixo do Bitcoin ({c_ind['btc_perc']}%)")
                         
-                        with c3: # Avaliação em Moedas
+                        with c3: # MÉTRICAS EM 3 MOEDAS (Real, Dólar e Bitcoin)
                             st.markdown("**💰 Avaliação Atual**")
                             v_usd = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'USD', cots_v)
                             v_btc = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BTC', cots_v)
+                            
+                            st.metric("Real", f"R$ {v_at_brl:,.2f}")
                             st.metric("Dólar", f"$ {v_usd:,.2f}")
                             st.metric("Bitcoin", f"₿ {v_btc:.8f}")
 
-                        # BOTÕES DE AÇÃO (Alinhados com as colunas acima)
+
+                        # BOTÕES DE AÇÃO (Editar, Enviar, Remover)
                         st.write("---")
                         b1, b2, b3 = st.columns(3)
-                        
-                        if b1.button("📝 Editar", key=f"btn_e_{row['id']}", use_container_width=True):
+                        if b1.button("📝 Editar", key=f"b_e_{row['id']}", use_container_width=True):
                             st.session_state[e_key] = True
                             st.rerun()
-                        
-                        if b2.button("📤 Enviar", key=f"btn_s_{row['id']}", use_container_width=True):
+                        if b2.button("📤 Enviar", key=f"b_s_{row['id']}", use_container_width=True):
                             st.session_state[s_key] = True
                             st.rerun()
+                        if b3.button("🗑️ Remover", key=f"b_d_{row['id']}", use_container_width=True):
+                            st.session_state[d_key] = True
+                            st.rerun()
+
+                        # Lógica de Envio e Remoção Simplificada para não dar erro
+                        if st.session_state.get(s_key):
+                            d_pk = st.text_input("Endereço Destino", key=f"d_{row['id']}")
+                            if st.button("Confirmar Envio", key=f"cs_{row['id']}"):
+                                cursor.execute("UPDATE itens SET dono_atual_pubkey = ? WHERE id = ?", (d_pk, row['id']))
+                                conn.commit()
+                                st.rerun()
                         
-                        if b3.button("🗑️ Remover", key=f"btn_d_{row['id']}", use_container_width=True):
-                            st.session_state[f"delete_confirm_{row['id']}"] = True
-
-
-
+                        if st.session_state.get(d_key):
+                            if st.button("Confirmar Exclusão", key=f"cd_{row['id']}"):
+                                cursor.execute("DELETE FROM itens WHERE id = ?", (row['id'],))
+                                conn.commit()
+                                st.rerun()
 
                         # HISTÓRICO DE PROPRIETÁRIOS
                         st.write("---")
@@ -877,8 +860,8 @@ elif menu == "Navegar Coleções":
                             for _, hr in df_h.iterrows():
                                 st.markdown(f"<div style='font-size: 0.8rem; border-left: 2px solid #ddd; padding-left: 8px; margin-bottom: 5px;'><b>{hr['data_transferencia']}</b>: {hr['antigo_dono_pubkey'][:10]}... → {hr['novo_dono_pubkey'][:10]}...</div>", unsafe_allow_html=True)
 
-
 conn.close()
+
 
 
 
