@@ -664,9 +664,11 @@ for index, row in df_v.iterrows():
             with c2:
                 st.markdown("**📈 Performance**")
                 # Aqui você pode manter sua lógica de performance
+
+                
             
-                        with c3: # MÉTRICAS EM 3 MOEDAS
-                            st.markdown("**💰 Avaliação Atual**")
+            with c3: # MÉTRICAS EM 3 MOEDAS
+                 st.markdown("**💰 Avaliação Atual**")
                             v_at_brl = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BRL', cots_v)
                             v_usd = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'USD', cots_v)
                             v_btc = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BTC', cots_v)
@@ -878,5 +880,6 @@ elif menu == "Navegar Coleções":
 
 
 conn.close()
+
 
 
