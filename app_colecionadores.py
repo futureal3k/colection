@@ -654,43 +654,42 @@ for index, row in df_v.iterrows():
         # --- VISUALIZAÇÃO PADRÃO ---
         else:
             # Colunas de Conteúdo (Garante que estas 3 colunas existam antes)
-            c1, c2, c3 = st.columns([1, 1.5, 1])
-            
-            with c1:
-                if row['imagem_url']: 
-                    st.image(row['imagem_url'], use_container_width=True)
-                st.write(f"**UUID:** `{row.get('uuid_unico', 'N/A')}`")
-            
-            with c2:
-                st.markdown("**📈 Performance**")
-                # Aqui você pode manter sua lógica de performance
-
-                
-            
-            with c3: # MÉTRICAS EM 3 MOEDAS
-                 st.markdown("**💰 Avaliação Atual**")
+                        # --- VISUALIZAÇÃO PADRÃO CORRIGIDA ---
+                        c1, c2, c3 = st.columns([1, 1.5, 1])
+                        
+                        with c1:
+                            if row['imagem_url']: 
+                                st.image(row['imagem_url'], use_container_width=True)
+                            st.write(f"**UUID:** `{row['uuid_unico']}`")
+                        
+                        with c2: # Performance Individual
+                            st.markdown("**📈 Performance**")
+                            # (Sua lógica de performance aqui)
                             v_at_brl = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BRL', cots_v)
+                            st.write(f"Valor Atual: **R$ {v_at_brl:,.2f}**")
+                        
+                        with c3: # Avaliação em Moedas
+                            st.markdown("**💰 Avaliação Atual**")
                             v_usd = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'USD', cots_v)
                             v_btc = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BTC', cots_v)
-                            
-                            st.metric("Real", f"R$ {v_at_brl:,.2f}")
                             st.metric("Dólar", f"$ {v_usd:,.2f}")
                             st.metric("Bitcoin", f"₿ {v_btc:.8f}")
 
-                        # ATENÇÃO: A linha abaixo deve estar alinhada com os "with c1, c2, c3"
+                        # BOTÕES DE AÇÃO (Alinhados com as colunas acima)
                         st.write("---")
                         b1, b2, b3 = st.columns(3)
-
+                        
                         if b1.button("📝 Editar", key=f"btn_e_{row['id']}", use_container_width=True):
                             st.session_state[e_key] = True
                             st.rerun()
-
+                        
                         if b2.button("📤 Enviar", key=f"btn_s_{row['id']}", use_container_width=True):
                             st.session_state[s_key] = True
                             st.rerun()
-
+                        
                         if b3.button("🗑️ Remover", key=f"btn_d_{row['id']}", use_container_width=True):
                             st.session_state[f"delete_confirm_{row['id']}"] = True
+
 
 
 
@@ -880,6 +879,7 @@ elif menu == "Navegar Coleções":
 
 
 conn.close()
+
 
 
 
