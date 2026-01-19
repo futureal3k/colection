@@ -5,3 +5,5 @@ pandas-datareader
 requests
 ecdsa
 numpy
+setuptools
+
