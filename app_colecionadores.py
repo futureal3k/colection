@@ -665,24 +665,31 @@ for index, row in df_v.iterrows():
                 st.markdown("**📈 Performance**")
                 # Aqui você pode manter sua lógica de performance
             
-            with c3:
-                st.markdown("**💰 Avaliação**")
-                # Aqui você pode manter sua lógica de métricas
+                        with c3: # MÉTRICAS EM 3 MOEDAS
+                            st.markdown("**💰 Avaliação Atual**")
+                            v_at_brl = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BRL', cots_v)
+                            v_usd = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'USD', cots_v)
+                            v_btc = converter_moeda_v2(row['valor_estimado'], row['moeda'], 'BTC', cots_v)
+                            
+                            st.metric("Real", f"R$ {v_at_brl:,.2f}")
+                            st.metric("Dólar", f"$ {v_usd:,.2f}")
+                            st.metric("Bitcoin", f"₿ {v_btc:.8f}")
 
-            # --- LINHA DIVISORA E BOTÕES (AQUI ESTAVA O ERRO) ---
-            st.write("---") 
-            b1, b2, b3 = st.columns(3)
-            
-            if b1.button("📝 Editar", key=f"btn_e_{row['id']}", use_container_width=True):
-                st.session_state[e_key] = True
-                st.rerun()
-            
-            if b2.button("📤 Enviar", key=f"btn_s_{row['id']}", use_container_width=True):
-                st.session_state[s_key] = True
-                st.rerun()
-            
-            if b3.button("🗑️ Remover", key=f"btn_d_{row['id']}", use_container_width=True):
-                st.session_state[f"delete_confirm_{row['id']}"] = True
+                        # ATENÇÃO: A linha abaixo deve estar alinhada com os "with c1, c2, c3"
+                        st.write("---")
+                        b1, b2, b3 = st.columns(3)
+
+                        if b1.button("📝 Editar", key=f"btn_e_{row['id']}", use_container_width=True):
+                            st.session_state[e_key] = True
+                            st.rerun()
+
+                        if b2.button("📤 Enviar", key=f"btn_s_{row['id']}", use_container_width=True):
+                            st.session_state[s_key] = True
+                            st.rerun()
+
+                        if b3.button("🗑️ Remover", key=f"btn_d_{row['id']}", use_container_width=True):
+                            st.session_state[f"delete_confirm_{row['id']}"] = True
+
 
 
                         # HISTÓRICO DE PROPRIETÁRIOS
@@ -871,4 +878,5 @@ elif menu == "Navegar Coleções":
 
 
 conn.close()
+
 
