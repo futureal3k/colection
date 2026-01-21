@@ -14,6 +14,10 @@ import hashlib
 import base64
 from ecdsa import SECP256k1, VerifyingKey
 
+if 'pagina_ativa' not in st.session_state:
+    st.session_state['pagina_ativa'] = 'minha_colecao'  # página padrão
+
+
 conn = sqlite3.connect('colecionadores.db', check_same_thread=False)
 cursor = conn.cursor()
 # --- CORREÇÃO DE TABELA (ADICIONE ISSO) ---
